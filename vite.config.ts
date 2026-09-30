@@ -1,15 +1,42 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
+import { defineConfig } from 'vite';
+
+const rootDir = typeof import.meta.dirname !== 'undefined'
+  ? import.meta.dirname
+  : path.dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig(() => {
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      {
+        name: 'sync-build-and-dist',
+        closeBundle() {
+          try {
+            const buildDir = path.resolve(rootDir, 'build');
+            const distDir = path.resolve(rootDir, 'dist');
+            if (fs.existsSync(buildDir)) {
+              fs.cpSync(buildDir, distDir, { recursive: true });
+            }
+          } catch (e) {
+            console.warn('Could not sync build to dist:', e);
+          }
+        },
+      },
+    ],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, '.'),
+        '@': path.resolve(rootDir, '.'),
       },
+    },
+    build: {
+      outDir: 'build',
+      emptyOutDir: true,
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
@@ -20,3 +47,4 @@ export default defineConfig(() => {
     },
   };
 });
+

@@ -84,11 +84,15 @@ Devuelve ÚNICAMENTE el JSON válido sin bloques markdown ni texto adicional.`;
 // Production or Vite Dev server middleware setup
 async function startServer() {
   if (process.env.NODE_ENV === 'production') {
-    // Serve static files from Vite build output
+    // Serve static files from build or dist directory
+    const fs = await import('fs');
+    const buildPath = path.resolve(__dirname, 'build');
     const distPath = path.resolve(__dirname, 'dist');
-    app.use(express.static(distPath));
+    const staticPath = fs.existsSync(buildPath) ? buildPath : distPath;
+
+    app.use(express.static(staticPath));
     app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(distPath, 'index.html'));
+      res.sendFile(path.resolve(staticPath, 'index.html'));
     });
   } else {
     // In dev, use Vite's connect instance as middleware
