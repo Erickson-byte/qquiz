@@ -6,9 +6,10 @@
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build",
+    "postbuild": "node -e \"const fs=require('fs'); if(fs.existsSync('build')&&!fs.existsSync('dist')){fs.cpSync('build','dist',{recursive:true});}else if(fs.existsSync('dist')&&!fs.existsSync('build')){fs.cpSync('dist','build',{recursive:true});}\"",
     "preview": "vite preview",
     "start": "tsx server.ts",
-    "clean": "rm -rf dist server.js",
+    "clean": "rm -rf dist build server.js",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

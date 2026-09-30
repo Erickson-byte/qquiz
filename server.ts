@@ -84,15 +84,54 @@ Devuelve ÚNICAMENTE el JSON válido sin bloques markdown ni texto adicional.`;
 // Production or Vite Dev server middleware setup
 async function startServer() {
   if (process.env.NODE_ENV === 'production') {
-    // Serve static files from build or dist directory
     const fs = await import('fs');
     const buildPath = path.resolve(__dirname, 'build');
     const distPath = path.resolve(__dirname, 'dist');
-    const staticPath = fs.existsSync(buildPath) ? buildPath : distPath;
 
-    app.use(express.static(staticPath));
+    // Check if frontend build exists; if not, build it automatically
+    let hasDist = fs.existsSync(path.resolve(distPath, 'index.html'));
+    let hasBuild = fs.existsSync(path.resolve(buildPath, 'index.html'));
+
+    if (!hasDist && !hasBuild) {
+      console.log('No index.html found. Automatically running build...');
+      try {
+        const { execSync } = await import('child_process');
+        execSync('npm run build', { stdio: 'inherit' });
+        hasDist = fs.existsSync(path.resolve(distPath, 'index.html'));
+        hasBuild = fs.existsSync(path.resolve(buildPath, 'index.html'));
+      } catch (err) {
+        console.error('Failed to auto-build frontend:', err);
+      }
+    }
+
+    // Determine the working static folder
+    const staticDir = hasDist ? distPath : hasBuild ? buildPath : distPath;
+
+    // Also ensure both directories are synchronized if one was missing
+    try {
+      if (hasDist && !hasBuild) {
+        fs.cpSync(distPath, buildPath, { recursive: true });
+      } else if (hasBuild && !hasDist) {
+        fs.cpSync(buildPath, distPath, { recursive: true });
+      }
+    } catch {}
+
+    app.use(express.static(staticDir));
     app.get('*', (_req, res) => {
-      res.sendFile(path.resolve(staticPath, 'index.html'));
+      const indexCandidate = path.resolve(staticDir, 'index.html');
+      if (fs.existsSync(indexCandidate)) {
+        res.sendFile(indexCandidate);
+      } else {
+        const fallbackDist = path.resolve(distPath, 'index.html');
+        const fallbackBuild = path.resolve(buildPath, 'index.html');
+        if (fs.existsSync(fallbackDist)) {
+          res.sendFile(fallbackDist);
+        } else if (fs.existsSync(fallbackBuild)) {
+          res.sendFile(fallbackBuild);
+        } else {
+          res.status(500).send('Aplicación construyéndose. Por favor recarga en unos segundos.');
+        }
+      }
     });
   } else {
     // In dev, use Vite's connect instance as middleware
