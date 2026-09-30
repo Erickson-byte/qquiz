@@ -1,0 +1,6 @@
+{
+  "name": "Duelo de Parejas: Reto Catracho & Sabiduría",
+  "description": "Juego mobile para parejas con historia de Honduras, cultura general, gramática, datos curiosos, problemas matemáticos con tiempo y ranking global.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
